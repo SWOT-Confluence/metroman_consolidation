@@ -16,8 +16,6 @@ import netCDF4 as ncf
 import numpy as np
 
 
-
-
 # --------------------------------------------------
 def get_args():
     """Get command-line arguments"""
@@ -48,7 +46,6 @@ class process_reaches():
         self.all_reach_ids = self.find_reach_ids()
         self.parse_data()
 
-    
     def get_cont_info(self):
         with open(os.path.join(self.input_mnt_path,'continent.json')) as f:
             cont_data = json.load(f)
@@ -88,7 +85,7 @@ class process_reaches():
         #         qu[i]=qu_setfile[ii,idx]
     
     def generate_outfile(self,reach_id, data_dict ):
-    #    #output     
+        # output     
         outfile= os.path.join(self.output_dir, f'{reach_id}_metroman.nc')     
         dsout = ncf.Dataset(outfile, 'w', format="NETCDF4") #output dataset
         # dsout.createDimension("nr", nr)
@@ -123,12 +120,7 @@ class process_reaches():
             allqu = set_group.createVariable("q_u", "f8", ("nt"), fill_value=fillvalue)
             allqu[:]=data_dict[reach_id][key]['qu_setfile']
 
-        
-            
         return dsout 
-
-
-
 
     def extract_mm_data(self, a_file, reach_id):
         mm_data=ncf.Dataset(a_file)
@@ -147,7 +139,6 @@ class process_reaches():
         ntsf=len(tsf)
 
         print('there are ',ntsf,'times in the set file')
-
 
         # grab the discharge array
         Qsetfile=mm_data['allq'][reach_index][:].filled(np.nan)
@@ -178,6 +169,7 @@ class process_reaches():
         #         'Qsetfile':self.data_dict[reach_id]['average']['Qsetfile'].append(Qsetfile)
         #     }
         # return A0hat, nahat, x1hat, Qsetfile, qu_setfile
+
     def create_average_group(self):
         for a_set in list(self.data_dict[self.reach_id].keys()):
             if a_set != 'average':
@@ -202,6 +194,7 @@ class process_reaches():
             else:
                 self.data_dict[self.reach_id]['average'][a_var] = self.data_dict[self.reach_id]['average'][a_var][0]
         print(self.data_dict[self.reach_id]['average'])
+
     def parse_data(self):
 
 
@@ -242,9 +235,9 @@ class process_reaches():
 def main():
     """Make a jazz noise here"""
     args = get_args() 
-    indir = '/mnt/flpe/metroman'
-    input_mnt_path = '/mnt/input'
-    output_dir = '/storage/repos/metroman_consolidation'
+    indir = '/mnt/data/flpe'
+    input_mnt_path = '/mnt/data/input'
+    output_dir = '/mnt/data/flpe'
     index = args.index
     process_reaches(indir, input_mnt_path, index, output_dir)
 
