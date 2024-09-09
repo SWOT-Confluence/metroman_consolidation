@@ -98,7 +98,6 @@ class process_reaches():
         t[:] = self.tswot
 
         for key in list(data_dict[reach_id].keys()):
-            print(key)
             set_group = dsout.createGroup(key)
 
             #                 'A0hat': A0hat,
@@ -125,20 +124,16 @@ class process_reaches():
     def extract_mm_data(self, a_file, reach_id):
         mm_data=ncf.Dataset(a_file)
         present_reaches = os.path.basename(a_file).split('_')[0].split('-')
-        print(present_reaches, reach_id) 
         reach_index = os.path.basename(a_file).split('_')[0].split('-').index(str(reach_id))
-        print(reach_index)
 
         # nr=np.max(mm_data['nr'][:].data)
         nr=mm_data.dimensions['nr'].size
-        # if nr != len(reachids):
-        #     print('Error! nr in the file must match the number of reaches in the filename')
 
         # determine number of times in the set file
         tsf=list(mm_data['t'][:].data) #setfile number of times - same for all reaches    
         ntsf=len(tsf)
 
-        print('there are ',ntsf,'times in the set file')
+
 
         # grab the discharge array
         Qsetfile=mm_data['allq'][reach_index][:].filled(np.nan)
@@ -160,7 +155,6 @@ class process_reaches():
                 'qu_setfile': qu_setfile,
                 'Qsetfile':Qsetfile
             }
-        print('average', self.data_dict[reach_id])
         # self.data_dict[reach_id]['average'] = {
         #         'A0hat': self.data_dict[reach_id]['average']['A0hat'].append([A0hat]),
         #         'nahat': self.data_dict[reach_id]['average']['nahat'].append([nahat]),
@@ -175,25 +169,15 @@ class process_reaches():
             if a_set != 'average':
                 for a_var in list(self.data_dict[self.reach_id][a_set].keys()):
                     self.data_dict[self.reach_id]['average'][a_var].append(self.data_dict[self.reach_id][a_set][a_var])
-        print('first')
-        # print(self.data_dict[self.reach_id]['average']['A0hat'])
-        # for outthing in self.data_dict[self.reach_id]['average']['A0hat']:
-        #     print('test')
-        #     print(outthing)
-        # raise
         for a_var in list(self.data_dict[self.reach_id]['average'].keys()):
             if len(self.data_dict[self.reach_id]['average'][a_var])>1:
-                print('average here', a_var)
                 if not np.isnan(self.data_dict[self.reach_id]['average'][a_var]).all():
-                    print('not all nan')
                     average_array_axis0 = np.nanmean(self.data_dict[self.reach_id]['average'][a_var][:], axis=0)
                     self.data_dict[self.reach_id]['average'][a_var] = average_array_axis0
                 else:
-                    print('all nan')
                     self.data_dict[self.reach_id]['average'][a_var] = self.data_dict[self.reach_id]['average'][a_var][0]
             else:
                 self.data_dict[self.reach_id]['average'][a_var] = self.data_dict[self.reach_id]['average'][a_var][0]
-        print(self.data_dict[self.reach_id]['average'])
 
     def parse_data(self):
 
