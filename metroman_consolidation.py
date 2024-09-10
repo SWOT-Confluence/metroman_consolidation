@@ -55,6 +55,7 @@ class process_reaches():
 
     def find_reach_ids(self):
         all_output_files = glob.glob(os.path.join(self.indir, f'{self.cont_number}*.nc'))
+        print(all_output_files)
         all_reach_ids = []
         all_reach_ids = [os.path.basename(i).split('_')[0].split('-') for i in all_output_files]
         all_reach_ids = list(set(sum(all_reach_ids, [])))
@@ -96,18 +97,17 @@ class process_reaches():
             t_str[i] = single_time_str
             
         for key in list(data_dict[reach_id].keys()):
-            if key != 'average':
-                set_group = dsout.createGroup(key)
-                allq = set_group.createVariable("allq", "f8", ( "nt"), fill_value=fillvalue)
-                allq[:] = data_dict[reach_id][key]['Qsetfile']
-                A0 = set_group.createVariable("A0hat", "f8", fill_value=fillvalue)
-                A0[:]= data_dict[reach_id][key]['A0hat']
-                na = set_group.createVariable("nahat", "f8", fill_value=fillvalue)
-                na[:]=data_dict[reach_id][key]['nahat']
-                x1 = set_group.createVariable("x1hat", "f8",  fill_value=fillvalue)
-                x1[:]=data_dict[reach_id][key]['x1hat']
-                allqu = set_group.createVariable("q_u", "f8", ("nt"), fill_value=fillvalue)
-                allqu[:]=data_dict[reach_id][key]['qu_setfile']
+            set_group = dsout.createGroup(key)
+            allq = set_group.createVariable("allq", "f8", ( "nt"), fill_value=fillvalue)
+            allq[:] = data_dict[reach_id][key]['Qsetfile']
+            A0 = set_group.createVariable("A0hat", "f8", fill_value=fillvalue)
+            A0[:]= data_dict[reach_id][key]['A0hat']
+            na = set_group.createVariable("nahat", "f8", fill_value=fillvalue)
+            na[:]=data_dict[reach_id][key]['nahat']
+            x1 = set_group.createVariable("x1hat", "f8",  fill_value=fillvalue)
+            x1[:]=data_dict[reach_id][key]['x1hat']
+            allqu = set_group.createVariable("q_u", "f8", ("nt"), fill_value=fillvalue)
+            allqu[:]=data_dict[reach_id][key]['qu_setfile']
 
         return dsout 
 
@@ -203,7 +203,7 @@ class process_reaches():
 def main():
     """Make a jazz noise here"""
     args = get_args() 
-    indir = '/mnt/flpe'
+    indir = '/mnt/flpe/metroman'
     input_mnt_path = '/mnt/input'
     output_dir = ''
     index = args.index
