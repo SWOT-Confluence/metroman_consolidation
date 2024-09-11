@@ -203,9 +203,9 @@ class process_reaches():
 def main():
     """Make a jazz noise here"""
     args = get_args() 
-    indir = '/mnt/flpe/metroman'
-    input_mnt_path = '/mnt/input'
-    output_dir = ''
+    indir = '/mnt/data/flpe/sets'
+    input_mnt_path = '/mnt/data/input'
+    output_dir = '/mnt/data/flpe'
     index = args.index
     process_reaches(indir, input_mnt_path, index, output_dir)
 
