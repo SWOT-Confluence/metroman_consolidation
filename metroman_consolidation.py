@@ -55,6 +55,7 @@ class process_reaches():
 
     def find_reach_ids(self):
         all_output_files = glob.glob(os.path.join(self.indir, f'{self.cont_number}*.nc'))
+        print(all_output_files)
         all_reach_ids = []
         all_reach_ids = [os.path.basename(i).split('_')[0].split('-') for i in all_output_files]
         all_reach_ids = list(set(sum(all_reach_ids, [])))
@@ -68,21 +69,12 @@ class process_reaches():
         # get swot file times
         self.tswot=list(np.round(swotfile['reach']['time'][:].filled(np.nan)/3600.))
         ntswot=len(self.tswot)    
-        print('   there are ',ntswot,'times in the swot file')
         
-        tswot_str=list(swotfile['reach']['time_str'][:].filled(np.nan))
+        self.tswot_str=list(swotfile['reach']['time_str'][:].filled(np.nan))
         
         swotfile.close()
-        
-        # # set up the Q estimates
-        # Q=np.full( (ntswot,),np.nan )
-        # qu=np.full( (ntswot,),np.nan )
-        # # print('tswot', tswot, tsf)
-        # for i,t in enumerate(tswot):
-        #     if not np.isnan(t) and t in tsf:
-        #         idx=tsf.index(t)
-        #         Q[i]=Qsetfile[ii,idx]
-        #         qu[i]=qu_setfile[ii,idx]
+        return ntswot
+    
     
     def generate_outfile(self,reach_id, data_dict ):
         # output     
@@ -96,19 +88,16 @@ class process_reaches():
         t = dsout.createVariable("nt","f8",("nt"),fill_value=fillvalue)
         t.long_name= 'swot timeseries "time" variable converted to hours and rounded to integer'
         t[:] = self.tswot
+    
+        t_str = dsout.createVariable("time_str",str,("nt"),fill_value=fillvalue)
+        t_str.long_name= 'swot timeseries "time" variable.'
 
-        for key in list(data_dict[reach_id].keys()):
-            print(key)
-            set_group = dsout.createGroup(key)
-
-            #                 'A0hat': A0hat,
-            #     'nahat': nahat,
-            #     'x1hat': x1hat,
-            #     'qu_setfile': qu_setfile,
-            #     'Qsetfile':Qsetfile
-            # }
-
+        time_str = [''.join([b.decode('utf-8') for b in sublist]) for sublist in self.tswot_str]
+        for i, single_time_str in enumerate(time_str):
+            t_str[i] = single_time_str
             
+        for key in list(data_dict[reach_id].keys()):
+            set_group = dsout.createGroup(key)
             allq = set_group.createVariable("allq", "f8", ( "nt"), fill_value=fillvalue)
             allq[:] = data_dict[reach_id][key]['Qsetfile']
             A0 = set_group.createVariable("A0hat", "f8", fill_value=fillvalue)
@@ -125,75 +114,59 @@ class process_reaches():
     def extract_mm_data(self, a_file, reach_id):
         mm_data=ncf.Dataset(a_file)
         present_reaches = os.path.basename(a_file).split('_')[0].split('-')
-        print(present_reaches, reach_id) 
         reach_index = os.path.basename(a_file).split('_')[0].split('-').index(str(reach_id))
-        print(reach_index)
 
         # nr=np.max(mm_data['nr'][:].data)
         nr=mm_data.dimensions['nr'].size
-        # if nr != len(reachids):
-        #     print('Error! nr in the file must match the number of reaches in the filename')
 
         # determine number of times in the set file
         tsf=list(mm_data['t'][:].data) #setfile number of times - same for all reaches    
         ntsf=len(tsf)
 
-        print('there are ',ntsf,'times in the set file')
+        # Initialize an array with np.nan of the same size as self.tswot
+        output_Qsetfile = np.full(len(self.tswot), np.nan)
+        output_qu_setfile = np.full(len(self.tswot), np.nan)
 
-        # grab the discharge array
-        Qsetfile=mm_data['allq'][reach_index][:].filled(np.nan)
-        Qsetfile
+        # Convert tsf and self.tswot to numpy arrays for easy indexing
+        tsf = np.array(tsf)
+        tswot = np.array(self.tswot)
 
-        # read other key metroman data
-        A0hat=mm_data['A0hat'][reach_index].filled(np.nan)
-        nahat=mm_data['nahat'][reach_index].filled(np.nan)
-        x1hat=mm_data['x1hat'][reach_index].filled(np.nan)
-        qu_setfile=mm_data['q_u'][reach_index][:].filled(np.nan)
+        # Loop through each index in self.tswot
+        for i, tswot_index in enumerate(tswot):
+            if tswot_index in tsf:
+                tsf_index = np.where(tsf == tswot_index)[0][0]
+                
+                # Grab the relevant data from mm_data based on the tsf index
+                output_Qsetfile[i] = mm_data['allq'][reach_index][tsf_index]
+                output_qu_setfile[i] = mm_data['q_u'][reach_index][tsf_index]
 
-        print(Qsetfile)
+        # Now output_* arrays will contain the data from mm_data corresponding to self.tswot indexes
+        # and np.nan for the indices that don't match.
         
-        mm_data.close()
+
         self.data_dict[reach_id][os.path.basename(a_file).split('_')[0]] = {
-                'A0hat': A0hat,
-                'nahat': nahat,
-                'x1hat': x1hat,
-                'qu_setfile': qu_setfile,
-                'Qsetfile':Qsetfile
+                'A0hat': mm_data['A0hat'][reach_index],
+                'nahat': mm_data['nahat'][reach_index],
+                'x1hat': mm_data['x1hat'][reach_index],
+                'qu_setfile': output_qu_setfile,
+                'Qsetfile':output_Qsetfile,
             }
-        print('average', self.data_dict[reach_id])
-        # self.data_dict[reach_id]['average'] = {
-        #         'A0hat': self.data_dict[reach_id]['average']['A0hat'].append([A0hat]),
-        #         'nahat': self.data_dict[reach_id]['average']['nahat'].append([nahat]),
-        #         'x1hat': self.data_dict[reach_id]['average']['x1hat'].append([x1hat]),
-        #         'qu_setfile': self.data_dict[reach_id]['average']['qu_setfile'].append(qu_setfile),
-        #         'Qsetfile':self.data_dict[reach_id]['average']['Qsetfile'].append(Qsetfile)
-        #     }
-        # return A0hat, nahat, x1hat, Qsetfile, qu_setfile
+        mm_data.close()
 
     def create_average_group(self):
         for a_set in list(self.data_dict[self.reach_id].keys()):
             if a_set != 'average':
                 for a_var in list(self.data_dict[self.reach_id][a_set].keys()):
                     self.data_dict[self.reach_id]['average'][a_var].append(self.data_dict[self.reach_id][a_set][a_var])
-        print('first')
-        # print(self.data_dict[self.reach_id]['average']['A0hat'])
-        # for outthing in self.data_dict[self.reach_id]['average']['A0hat']:
-        #     print('test')
-        #     print(outthing)
-        # raise
         for a_var in list(self.data_dict[self.reach_id]['average'].keys()):
             if len(self.data_dict[self.reach_id]['average'][a_var])>1:
-                print('average here', a_var)
                 if not np.isnan(self.data_dict[self.reach_id]['average'][a_var]).all():
-                    print('not all nan')
                     average_array_axis0 = np.nanmean(self.data_dict[self.reach_id]['average'][a_var][:], axis=0)
                     self.data_dict[self.reach_id]['average'][a_var] = average_array_axis0
                 else:
-                    print('all nan')
                     self.data_dict[self.reach_id]['average'][a_var] = self.data_dict[self.reach_id]['average'][a_var][0]
             else:
                 self.data_dict[self.reach_id]['average'][a_var] = self.data_dict[self.reach_id]['average'][a_var][0]
-        print(self.data_dict[self.reach_id]['average'])
 
     def parse_data(self):
 
@@ -210,7 +183,7 @@ class process_reaches():
                 'nahat': [],
                 'x1hat': [],
                 'qu_setfile': [],
-                'Qsetfile': []
+                'Qsetfile': [],
             } 
             self.reach_nt = self.find_reach_nt(reach_id = reach_id)
 
@@ -223,11 +196,6 @@ class process_reaches():
             self.create_average_group()
 
             outfile = self.generate_outfile(reach_id = reach_id, data_dict = self.data_dict)
-            
-                            # run mike's thing to filter the output into the correct days
-            # create_data_group_and_add_data(outfile = outfile)
-
-            # create_average_group()
 
             outfile.close()
 
@@ -235,7 +203,7 @@ class process_reaches():
 def main():
     """Make a jazz noise here"""
     args = get_args() 
-    indir = '/mnt/data/flpe'
+    indir = '/mnt/data/flpe/sets'
     input_mnt_path = '/mnt/data/input'
     output_dir = '/mnt/data/flpe'
     index = args.index
