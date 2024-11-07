@@ -15,8 +15,8 @@ resource "aws_batch_job_definition" "generate_batch_jd_metroman_consolidation" {
       }
     },
     "resourceRequirements": [
-      {"type": "MEMORY", "value": "512"},
-      {"type": "VCPU", "value": "0.25"}
+      {"type": "MEMORY", "value": "16384"},
+      {"type": "VCPU", "value": "2"}
     ],
     "mountPoints": [
       {
