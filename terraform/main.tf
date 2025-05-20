@@ -19,11 +19,11 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
-data "aws_efs_file_system" "aws_efs_input" {
+data "aws_efs_file_system" "input" {
   creation_token = "${var.prefix}-input"
 }
 
-data "aws_efs_file_system" "aws_efs_flpe" {
+data "aws_efs_file_system" "flpe" {
   creation_token = "${var.prefix}-flpe"
 }
 
@@ -45,7 +45,7 @@ locals {
 }
 
 module "confluence-metroman-consolidation" {
-  source = "./modules/metroman"
+  source = "./modules/metroman_consolidation"
   app_name = var.app_name
   app_version = var.app_version
   aws_region = var.aws_region
@@ -54,7 +54,7 @@ module "confluence-metroman-consolidation" {
     flpe = data.aws_efs_file_system.flpe.file_system_id
   }
   environment = var.environment
-  iam_execution_role_arn = data.aws_iam_role.execution.arn
-  iam_job_role_arn = data.aws_iam_role.job.arn
+  iam_execution_role_arn = data.aws_iam_role.exe_role.arn
+  iam_job_role_arn = data.aws_iam_role.job_role.arn
   prefix = var.prefix
 }
